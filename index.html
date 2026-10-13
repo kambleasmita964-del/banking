@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banking Management System</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #eef2f7;
+    margin: 0;
+    color: #222;
+}
+
+header {
+    background: #163b70;
+    color: white;
+    text-align: center;
+    padding: 22px 10px;
+}
+
+header h1 {
+    margin: 0 0 8px;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 25px auto;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 22px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px #00000012;
+}
+
+h2 {
+    color: #163b70;
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+input, select {
+    width: 100%;
+    padding: 11px;
+    margin-top: 6px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+    font-size: 15px;
+}
+
+button {
+    background: #1768c4;
+    color: white;
+    padding: 11px 15px;
+    margin: 10px 5px 0 0;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #104b91;
+}
+
+.withdraw {
+    background: #c0392b;
+}
+
+.withdraw:hover {
+    background: #922b21;
+}
+
+#accountInfo {
+    background: #edf4ff;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 6px;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+.message {
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.success {
+    color: green;
+}
+
+.error {
+    color: red;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+    min-width: 600px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 11px;
+    text-align: center;
+}
+
+th {
+    background: #163b70;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f5f7fa;
+}
+
+footer {
+    text-align: center;
+    padding: 18px;
+    color: #666;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    header h1 {
+        font-size: 23px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Banking Management System</h1>
+    <p>OOP Mini Project</p>
+</header>
+
+<main class="container">
+
+    <!-- Create Account -->
+    <section class="card">
+        <h2>Create New Account</h2>
+
+        <label for="customerName">Customer Name</label>
+        <input type="text" id="customerName"
+               placeholder="Enter customer name" maxlength="60">
+
+        <label for="initialDeposit">Initial Deposit (₹)</label>
+        <input type="number" id="initialDeposit"
+               placeholder="Enter initial deposit" min="0" step="0.01">
+
+        <button id="createBtn" type="button">Create Account</button>
+    </section>
+
+    <!-- Account Operations -->
+    <section class="card">
+        <h2>Account Operations</h2>
+
+        <label for="accountSelect">Select Account</label>
+        <select id="accountSelect">
+            <option value="">No accounts available</option>
+        </select>
+
+        <div id="accountInfo">
+            Please create an account first.
+        </div>
+
+        <label for="amount">Enter Amount (₹)</label>
+        <input type="number" id="amount"
+               placeholder="Enter amount" min="0.01" step="0.01">
+
+        <button id="depositBtn" type="button">Deposit Money</button>
+
+        <button id="withdrawBtn" class="withdraw" type="button">
+            Withdraw Money
+        </button>
+
+        <button id="balanceBtn" type="button">Check Balance</button>
+
+        <button id="displayBtn" type="button">
+            Display Account Information
+        </button>
+
+        <p id="message" class="message" aria-live="polite"></p>
+    </section>
+
+    <!-- Passbook -->
+    <section class="card">
+        <h2>Passbook / Transaction History</h2>
+
+        <label for="fromDate">From Date</label>
+        <input type="date" id="fromDate">
+
+        <label for="toDate">To Date</label>
+        <input type="date" id="toDate">
+
+        <button id="passbookBtn" type="button">
+            Show Passbook
+        </button>
+
+        <button id="allTransactionsBtn" type="button">
+            Show All Transactions
+        </button>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Account No.</th>
+                        <th>Transaction</th>
+                        <th>Amount</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+
+                <tbody id="transactionBody">
+                    <tr>
+                        <td colspan="5">No transactions available.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    Banking Management System | Educational Mini Project
+</footer>
+
+<script>
+"use strict";
+
+// Banking system demo
+const DAILY_LIMIT = 20000;
+const STORAGE_KEY = "banking_system_single_file_v1";
+
+let accounts = [];
+let transactions = [];
+let nextAccountNumber = 1001;
+
+// Load saved data
+try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+
+    if (saved &&
+        Array.isArray(saved.accounts) &&
+        Array.isArray(saved.transactions) &&
+        Number.isInteger(saved.nextAccountNumber)) {
+
+        accounts = saved.accounts;
+        transactions = saved.transactions;
+        nextAccountNumber = saved.nextAccountNumber;
+    }
+} catch (error) {
+    console.error("Could not load saved data:", error);
+}
+
+const $ = id => document.getElementById(id);
+
+function saveData() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            accounts,
+            transactions,
+            nextAccountNumber
+        }));
+    } catch (error) {
+        console.error("Could not save data:", error);
+        showMessage("Unable to save data in this browser.", true);
+    }
+}
+
+function money(amount) {
+    return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR"
+    }).format(amount);
+}
+
+function today() {
+    const d = new Date();
+
+    return d.getFullYear() + "-" +
+        String(d.getMonth() + 1).padStart(2, "0") + "-" +
+        String(d.getDate()).padStart(2, "0");
+}
+
+function showMessage(text, error = false) {
+    $("message").textContent = text;
+    $("message").className = "message " +
+        (error ? "error" : "success");
+}
+
+function getSelectedAccount() {
+    return accounts.find(
+        account => String(account.number) === $("accountSelect").value
+    ) || null;
+}
+
+// Create account
+function createAccount() {
+    const name = $("customerName").value.trim();
+    const initial = Number($("initialDeposit").value);
+
+    if (!name) {
+        showMessage("Please enter the customer name.", true);
+        return;
+    }
+
+    if ($("initialDeposit").value.trim() === "" ||
+        !Number.isFinite(initial) || initial < 0) {
+
+        showMessage("Enter a valid initial deposit.", true);
+        return;
+    }
+
+    const account = {
+        number: nextAccountNumber++,
+        name: name,
+        balance: initial,
+        withdrawnToday: 0,
+        withdrawalDate: today()
+    };
+
+    accounts.push(account);
+
+    if (initial > 0) {
+        addTransaction(account, "Opening Deposit", initial);
+    }
+
+    saveData();
+    renderAccounts();
+
+    $("accountSelect").value = String(account.number);
+
+    $("customerName").value = "";
+    $("initialDeposit").value = "";
+
+    renderAccountInfo();
+    renderTransactions();
+
+    showMessage(
+        "Account created successfully! Account Number: " +
+        account.number
+    );
+}
+
+// Record transaction
+function addTransaction(account, type, amount) {
+    transactions.push({
+        date: new Date().toISOString(),
+        accountNumber: account.number,
+        type: type,
+        amount: amount,
+        balance: account.balance
+    });
+}
+
+// Deposit money
+function depositMoney() {
+    const account = getSelectedAccount();
+    const input = $("amount").value;
+    const amount = Number(input);
+
+    if (!account) {
+        showMessage("Please select an account.", true);
+        return;
+    }
+
+    if (input.trim() === "" ||
+        !Number.isFinite(amount) || amount <= 0) {
+
+        showMessage("Enter a valid deposit amount.", true);
+        return;
+    }
+
+    account.balance = Math.round(
+        (account.balance + amount) * 100
+    ) / 100;
+
+    addTransaction(account, "Deposit", amount);
+
+    saveData();
+    renderAccountInfo();
+    renderTransactions();
+
+    $("amount").value = "";
+
+    showMessage("Deposit successful: " + money(amount));
+}
+
+// Withdraw money
+function withdrawMoney() {
+    const account = getSelectedAccount();
+    const input = $("amount").value;
+    const amount = Number(input);
+
+    if (!account) {
+        showMessage("Please select an account.", true);
+        return;
+    }
+
+    if (input.trim() === "" ||
+        !Number.isFinite(amount) || amount <= 0) {
+
+        showMessage("Enter a valid withdrawal amount.", true);
+        return;
+    }
+
+    // Reset daily limit when date changes
+    if (account.withdrawalDate !== today()) {
+        account.withdrawalDate = today();
+        account.withdrawnToday = 0;
+    }
+
+    if (amount > account.balance) {
+        showMessage("Insufficient balance.", true);
+        return;
+    }
+
+    if (account.withdrawnToday + amount > DAILY_LIMIT) {
+        showMessage(
+            "Daily withdrawal limit is ₹20,000. Remaining limit: " +
+            money(Math.max(0, DAILY_LIMIT - account.withdrawnToday)),
+            true
+        );
+        return;
+    }
+
+    account.balance = Math.round(
+        (account.balance - amount) * 100
+    ) / 100;
+
+    account.withdrawnToday = Math.round(
+        (account.withdrawnToday + amount) * 100
+    ) / 100;
+
+    addTransaction(account, "Withdrawal", amount);
+
+    saveData();
+    renderAccountInfo();
+    renderTransactions();
+
+    $("amount").value = "";
+
+    showMessage("Withdrawal successful: " + money(amount));
+}
+
+// Display accounts
+function renderAccounts() {
+    const select = $("accountSelect");
+    const previous = select.value;
+
+    select.replaceChildren();
+
+    if (accounts.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No accounts available";
+        select.appendChild(option);
+    } else {
+        accounts.forEach(account => {
+            const option = document.createElement("option");
+            option.value = String(account.number);
+            option.textContent =
+                account.number + " - " + account.name;
+
+            select.appendChild(option);
+        });
+
+        if (accounts.some(a => String(a.number) === previous)) {
+            select.value = previous;
+        }
+    }
+
+    renderAccountInfo();
+}
+
+// Display account information
+function renderAccountInfo() {
+    const account = getSelectedAccount();
+    const box = $("accountInfo");
+
+    box.replaceChildren();
+
+    if (!account) {
+        box.textContent = "Please create or select an account.";
+        return;
+    }
+
+    if (account.withdrawalDate !== today()) {
+        account.withdrawalDate = today();
+        account.withdrawnToday = 0;
+        saveData();
+    }
+
+    const details = [
+        ["Account Number", account.number],
+        ["Customer Name", account.name],
+        ["Current Balance", money(account.balance)],
+        ["Withdrawn Today", money(account.withdrawnToday)],
+        ["Daily Withdrawal Limit", money(DAILY_LIMIT)],
+        ["Remaining Daily Limit",
+            money(Math.max(0, DAILY_LIMIT - account.withdrawnToday))]
+    ];
+
+    details.forEach(([label, value]) => {
+        const line = document.createElement("div");
+        const strong = document.createElement("strong");
+
+        strong.textContent = label + ": ";
+        line.appendChild(strong);
+        line.appendChild(document.createTextNode(String(value)));
+
+        box.appendChild(line);
+    });
+}
+
+// Check balance
+function checkBalance() {
+    const account = getSelectedAccount();
+
+    if (!account) {
+        showMessage("Please select an account.", true);
+        return;
+    }
+
+    showMessage("Current Balance: " + money(account.balance));
+}
+
+// Display account information
+function displayAccountInformation() {
+    const account = getSelectedAccount();
+
+    if (!account) {
+        showMessage("Please select an account.", true);
+        return;
+    }
+
+    renderAccountInfo();
+    showMessage("Account information displayed successfully.");
+}
+
+// Show passbook
+function renderTransactions(list = transactions) {
+    const body = $("transactionBody");
+    body.replaceChildren();
+
+    const sorted = [...list].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+    );
+
+    if (sorted.length === 0) {
+        const row = body.insertRow();
+        const cell = row.insertCell();
+
+        cell.colSpan = 5;
+        cell.textContent = "No transactions available.";
+
+        return;
+    }
+
+    sorted.forEach(tx => {
+        const row = body.insertRow();
+
+        const dateCell = row.insertCell();
+        dateCell.textContent =
+            new Date(tx.date).toLocaleString("en-IN");
+
+        row.insertCell().textContent = tx.accountNumber;
+        row.insertCell().textContent = tx.type;
+        row.insertCell().textContent = money(tx.amount);
+        row.insertCell().textContent = money(tx.balance);
+    });
+}
+
+// Filter passbook by date
+function showPassbook() {
+    const from = $("fromDate").value;
+    const to = $("toDate").value;
+
+    if (from && to && from > to) {
+        showMessage("From date cannot be after To date.", true);
+        return;
+    }
+
+    const filtered = transactions.filter(tx => {
+        const d = new Date(tx.date);
+
+        const date =
+            d.getFullYear() + "-" +
+            String(d.getMonth() + 1).padStart(2, "0") + "-" +
+            String(d.getDate()).padStart(2, "0");
+
+        return (!from || date >= from) &&
+               (!to || date <= to);
+    });
+
+    renderTransactions(filtered);
+
+    showMessage("Passbook displayed: " + filtered.length +
+        " transaction(s).");
+}
+
+// Button event listeners
+$("createBtn").addEventListener("click", createAccount);
+$("depositBtn").addEventListener("click", depositMoney);
+$("withdrawBtn").addEventListener("click", withdrawMoney);
+$("balanceBtn").addEventListener("click", checkBalance);
+$("displayBtn").addEventListener(
+    "click", displayAccountInformation
+);
+$("passbookBtn").addEventListener("click", showPassbook);
+
+$("allTransactionsBtn").addEventListener("click", () => {
+    $("fromDate").value = "";
+    $("toDate").value = "";
+
+    renderTransactions();
+    showMessage("Showing all transactions.");
+});
+
+$("accountSelect").addEventListener("change", renderAccountInfo);
+
+// Initial display
+renderAccounts();
+renderTransactions();
+
+</script>
+
+</body>
+</html>
